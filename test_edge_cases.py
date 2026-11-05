@@ -6,10 +6,13 @@ import evm_engine as E
 def fresh():
     return E.load_excel("sample_project.xlsx")
 
+FAILED = []
+
 def case(name, fn):
     try:
         res = fn(); print(f"PASS  {name}: {res}")
     except Exception as e:
+        FAILED.append(name)
         print(f"FAIL  {name}: {type(e).__name__}: {e}")
 
 def t1():  # Month 1: activities not started -> NaN indices, not crash
@@ -90,3 +93,6 @@ def t14():  # only Month 1 reported -> metrics and commentary work for a one-mon
 
 for i, f in enumerate([t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14], 1):
     case(f"E{i}", f)
+
+if FAILED:
+    raise SystemExit(f"{len(FAILED)} edge case(s) failed: {', '.join(FAILED)}")
