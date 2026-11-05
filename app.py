@@ -13,6 +13,13 @@ import evm_engine as E
 
 st.set_page_config(page_title="EVM Dashboard | CE725", layout="wide")
 
+# Full-width charts: newer Streamlit's plotly_chart accepts width="stretch"; older ones need use_container_width=True
+# (on those, an unknown width= would be passed to Plotly and show a deprecation warning).
+import inspect
+WIDE = ({"width": "stretch"} if "width" in inspect.signature(st.plotly_chart).parameters
+        else {"use_container_width": True})
+
+
 INK, PV_C, EV_C, AC_C, GRID = "#1f2933", "#7b8794", "#1b7f3b", "#c0392b", "#e4e7eb"
 RAG = {"green": "#1b7f3b", "amber": "#d68910", "red": "#c0392b", "n/a": "#7b8794"}
 
@@ -119,7 +126,7 @@ with tabs[0]:
                           xaxis_title="Month", yaxis_title="Rs lakh", plot_bgcolor="white",
                           legend=dict(orientation="h", y=-0.2), margin=dict(t=50, l=10, r=10))
         fig.update_xaxes(gridcolor=GRID); fig.update_yaxes(gridcolor=GRID)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, **WIDE)
     with right:
         fig2 = go.Figure()
         fig2.add_scatter(x=T.index, y=T["CPI"], name="CPI", mode="lines+markers", line=dict(color=AC_C))
@@ -131,7 +138,7 @@ with tabs[0]:
                            xaxis_title="Month", legend=dict(orientation="h", y=-0.2), margin=dict(t=50, l=10, r=10),
                            yaxis=dict(range=[min(0.5, T[['CPI','SPI']].min().min()-0.05), 1.15]))
         fig2.update_xaxes(gridcolor=GRID, dtick=1); fig2.update_yaxes(gridcolor=GRID)
-        st.plotly_chart(fig2, width="stretch")
+        st.plotly_chart(fig2, **WIDE)
 
     st.subheader("Progress commentary")
     for line in E.commentary(p, month):
@@ -149,7 +156,7 @@ with tabs[0]:
         })
         fc["ETC (Rs)"] = fc["EAC (Rs)"] - M["AC"]
         fc["VAC (Rs)"] = M["BAC"] - fc["EAC (Rs)"]
-        st.dataframe(fc.style.format({c: "{:,.0f}" for c in fc.columns[1:]}), hide_index=True, width="stretch")
+        st.dataframe(fc.style.format({c: "{:,.0f}" for c in fc.columns[1:]}), hide_index=True, **WIDE)
         if M["Budget exhausted"]:
             st.markdown("**TCPI** to meet BAC: **not defined**: actual cost has reached the budget, "
                         "so BAC cannot be met at any efficiency.")
@@ -188,7 +195,7 @@ with tabs[1]:
                            "CV": "{:,.0f}", "SV": "{:,.0f}", "CPI": "{:.3f}", "SPI": "{:.3f}",
                            "Planned %": "{:.0f}", "Actual %": "{:.0f}"}, na_rep="–")
             .map(colour, subset=["CPI", "SPI"]),
-        width="stretch")
+        **WIDE)
     st.caption("Status bands: GREEN ≥ 1.00, AMBER 0.90–0.99, RED < 0.90 (cost / schedule). "
                "Activities not yet started show – for indices.")
     fig3 = go.Figure()
@@ -196,10 +203,10 @@ with tabs[1]:
     fig3.add_bar(x=show["Activity"], y=show["SV"]/1e5, name="SV", marker_color=PV_C)
     fig3.update_layout(title="Cost and schedule variance by activity (Rs lakh)", barmode="group",
                        plot_bgcolor="white", height=380)
-    st.plotly_chart(fig3, width="stretch")
+    st.plotly_chart(fig3, **WIDE)
     st.subheader("Monthly trend (project level)")
     st.dataframe(E.trend(p).drop(columns="Budget exhausted").T.style.format("{:,.3f}", na_rep="–"),
-                 width="stretch", height=600)
+                 **WIDE, height=600)
 
 # ---------------------------------------------------------------- formulas
 with tabs[3]:
